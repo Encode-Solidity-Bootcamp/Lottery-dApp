@@ -10,11 +10,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const config: HardhatUserConfig = {
   solidity: "0.8.18",
-  //Comment line 13 -26 if you want to test(lottery.ts)
-    optimizer: {
-      enabled: true,
-      runs: 200,
-    },
+  //Comment line 13 -22 if you want to test(Lottery)
   defaultNetwork: "sepolia",
   networks: {
     sepolia: {
