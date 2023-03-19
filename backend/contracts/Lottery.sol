@@ -37,7 +37,7 @@ contract Lottery is Ownable {
         paymentToken = new LotteryToken(tokenName, tokenSymbol);
         purchaseRatio = _purchaseRatio;
          betPrice = _betPrice;
-        betFee = _betFee;
+         betFee = _betFee;
 
         
     }
