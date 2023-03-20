@@ -6,7 +6,7 @@ import { CountdownCircleTimer } from 'react-countdown-circle-timer'
 import 'bootstrap/dist/css/bootstrap.css'
 import styles from '@/styles/Home.module.css'
 import React, { useEffect, useRef, useState } from 'react'
-import { BigNumber, Contract, providers, utils } from 'ethers'
+import { ethers, BigNumber, Contract, providers, utils } from 'ethers'
 import Web3Modal from 'web3modal'
 import {
   LOTTERY_CONTRACT,
@@ -43,6 +43,8 @@ export default function Home() {
   const [amountToBurn, setAmountToBurn] = useState(zero)
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef: any = useRef()
+
+  
 
   //      *********Functions*********
 
@@ -154,7 +156,7 @@ export default function Home() {
   }, [walletConnected])
 
   const renderConnectButton = () => {
-    // If wallet is not connected, return a button which allows them to connect their wllet
+    // If wallet is not connected, return a button which allows them to connect their wallet
     if (!walletConnected) {
       return (
         <button onClick={connectWallet} className="btn btn-dark btn-lg">
@@ -164,13 +166,56 @@ export default function Home() {
     } else {
       return <button className="btn btn-dark btn-md">{address}</button>
     }
+
+  }
+
+  //call openBet function 
+  const openBet = async (duration:string) => {
+    if(!walletConnected){
+      return (<button onClick={connectWallet} className="btn btn-dark btn-lg">
+      Connect your wallet
+    </button>)
+    } else {
+      const signer = await getProviderOrSigner(true);
+      const provider = await getProviderOrSigner(false);
+      const currentBlock = await provider.getBlock("latest");
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const timeTarget = currentBlock.timestamp + parseFloat(duration);
+      const tx = await lotteryContract.openBets(timeTarget);
+      const txReceipt = await tx.wait();
+      window.alert(txReceipt.transactionHash);
+      return txReceipt.transactionHash;
+      
+    }
+  }
+
+  // Logic for buyTokensForLottery()
+
+  const buyTokensForLottery = async (amount: string) => {
+    if(!walletConnected){
+      return (<button onClick={connectWallet} className="btn btn-dark btn-lg">
+      Connect your wallet
+    </button>)
+    } else {
+      const TOKEN_RATIO = 10;
+      const signer = await getProviderOrSigner(true);
+      const provider = await getProviderOrSigner(false);
+      const address = await signer.getAddress();
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const tx = await lotteryContract.connect(signer).purchaseTokens({
+        value: ethers.utils.parseEther(amount).div(TOKEN_RATIO),
+      });
+      const txReceipt = await tx.wait();
+      window.alert(txReceipt.transactionHash);
+      return txReceipt.transactionHash;
+    }
   }
 
   return (
     <>
       <Head>
         <title>Team 11 </title>
-        <meta name="description" content="Encode SOolidity Bootcamp" />
+        <meta name="description" content="Encode Solidity Bootcamp" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -205,7 +250,7 @@ export default function Home() {
           </div>
           <button className="btn btn-dark btn-md mt-2">close lottery</button>
 
-          <div className="card-footer text-muted">Duaraion set: 5</div>
+          <div className="card-footer text-muted">Duration set: 5</div>
         </div>
         <div className={styles.center}>
           <div className="card text-center">
@@ -259,7 +304,7 @@ export default function Home() {
                 className="form-control"
                 type="number"
               />
-              <button className="btn btn-dark btn-md mt-2">set</button>
+              <button className="btn btn-dark btn-md mt-2" >set</button>
             </div>
           </div>
 
@@ -269,10 +314,13 @@ export default function Home() {
               <h5 className="card-title">Did you win the lottery? </h5>
               <p className="card-text">Prize won: </p>
               <button className="btn btn-dark">Withdraw Winnings</button>
-            </div>
-          </div>
+          </div> 
+           </div>
           <Confetti width={width} height={height} />
-        </div>
+        
+          
+          </div>
+        
       </main>
     </>
   )
