@@ -169,37 +169,45 @@ export default function Home() {
 
   }
 
-  //call openBet function
+  //call openBet function 
   const openBet = async (duration:string) => {
     if(!walletConnected){
       return (<button onClick={connectWallet} className="btn btn-dark btn-lg">
       Connect your wallet
     </button>)
     } else {
-      const signer = getProviderOrSigner(true)
-      const provider = await getProviderOrSigner()
-      const currentBlock = await provider.getBlock("latest")
-      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer)
-      const timeTarget = currentBlock.timestamp + parseFloat(duration)
+      const signer = await getProviderOrSigner(true);
+      const provider = await getProviderOrSigner(false);
+      const currentBlock = await provider.getBlock("latest");
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const timeTarget = currentBlock.timestamp + parseFloat(duration);
       const tx = await lotteryContract.openBets(timeTarget);
       const txReceipt = await tx.wait();
-      window.alert(txReceipt.transactionHash)
-      return txReceipt.transactionHash
+      window.alert(txReceipt.transactionHash);
+      return txReceipt.transactionHash;
       
     }
   }
 
   // Logic for buyTokensForLottery()
 
-  const buyTokensForLottery = async () => {
+  const buyTokensForLottery = async (amount: string) => {
     if(!walletConnected){
       return (<button onClick={connectWallet} className="btn btn-dark btn-lg">
       Connect your wallet
     </button>)
     } else {
-      const signer = getProviderOrSigner(true)
-      const provider = await getProviderOrSigner()
-      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer)
+      const TOKEN_RATIO = 10;
+      const signer = await getProviderOrSigner(true);
+      const provider = await getProviderOrSigner(false);
+      const address = await signer.getAddress();
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const tx = await lotteryContract.connect(signer).purchaseTokens({
+        value: ethers.utils.parseEther(amount).div(TOKEN_RATIO),
+      });
+      const txReceipt = await tx.wait();
+      window.alert(txReceipt.transactionHash);
+      return txReceipt.transactionHash;
     }
   }
 
@@ -296,7 +304,7 @@ export default function Home() {
                 className="form-control"
                 type="number"
               />
-              <button className="btn btn-dark btn-md mt-2">set</button>
+              <button className="btn btn-dark btn-md mt-2" >set</button>
             </div>
           </div>
 
