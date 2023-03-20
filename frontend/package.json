@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "format": "prettier --check --ignore-path .gitignore .",
+    "format:fix": "prettier --write --ignore-path .gitignore ."
   },
   "dependencies": {
     "@types/node": "18.15.3",
@@ -24,5 +26,8 @@
     "react-use": "^17.4.0",
     "typescript": "5.0.2",
     "web3modal": "^1.9.12"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.5"
   }
 }
