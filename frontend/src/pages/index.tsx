@@ -59,12 +59,22 @@ export default function Home() {
     const provider = await web3ModalRef.current.connect()
     const web3Provider = new providers.Web3Provider(provider)
 
-    const accounts = await ethereum.request({
-      method: 'eth_requestAccounts',
-    })
+    // const accounts = await ethereum.request({
+    //   method: 'eth_requestAccounts',
+    // })
 
+    if (window.ethereum) {
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts',
+      })
     const address = accounts[0]
     setAddress(address)
+    } else {
+      throw new Error('No Ethereum provider found')
+    }
+    
+
+    
 
     // If user is not connected to the sepolia network, let them know and throw an error
     const { chainId } = await web3Provider.getNetwork()
@@ -169,9 +179,9 @@ export default function Home() {
 
   }
 
-  //call openBet function 
+  // call openBet function 
   const openBets = async (duration:string) => {
-    try {
+   try {
       const signer = await getProviderOrSigner(true);
       const provider = await getProviderOrSigner(false);
       const currentBlock = await provider.getBlock("latest");
@@ -192,7 +202,54 @@ export default function Home() {
     
   }
 
-    //call openBet function 
+  //DON'T BOTHER WITH THIS JUST SOMETHING I TRIED TO CATCH ERRORS
+  // const openBets = async (openBetsTime: string) => {
+  //   try {
+  //     console.log('openBets clicked');
+  //     console.log(`passed duration ${openBetsTime}`);
+      
+  //     const timeTarget = parseFloat(openBetsTime);
+      
+  //     if (isNaN(timeTarget)) {
+  //       throw new Error('Invalid time duration');
+  //     }
+      
+  //     const signer = await getProviderOrSigner(true);
+  //     const address = await signer.getAddress();
+  //     console.log(address);
+      
+  //     const provider = await getProviderOrSigner(false);
+  //     const currentBlock = await provider.getBlockNumber('latest');
+  //     console.log(currentBlock);
+      
+  //     const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT, LOTTERY_ABI, provider);
+  //     const tx = await lotteryContract.connect(signer).openBets(timeTarget);
+  //     const txReceipt = await tx.wait();
+      
+  //     console.log('Bets opened with receipt:', txReceipt.transactionHash);
+      
+  //     if (typeof setOpenBetsTime === 'function') {
+  //       setOpenBetsTime('');
+  //     }
+      
+  //     if (typeof setDuration === 'function') {
+  //       setDuration(Number(openBetsTime));
+  //     }
+      
+  //     if (typeof checkLotteryState === 'function') {
+  //       checkLotteryState();
+  //     }
+      
+  //     return txReceipt.transactionHash;
+      
+  //   } catch (error) {
+  //     console.error('Error opening lottery:', error);
+  //     throw error;
+  //   }
+  // };
+  
+
+    //call closeBet function 
     const closeLottery = async () => {
       try {
         const provider = await getProviderOrSigner(false);
@@ -365,7 +422,9 @@ export default function Home() {
           <p>
             Balance(ETH): {utils.formatEther(ethBalance)}ETH <br />
             Balance(Team11) {utils.formatEther(tokenBalance)} T11
+            
           </p>
+          
 
           <div>{renderConnectButton()}</div>
         </div>
@@ -459,7 +518,8 @@ export default function Home() {
                 type="number"
               />
               <button onClick={(e) => {
-                openBets(openBetsTime);
+                openBets(openBetsTime)
+                console.log('button clicked');
               }} className="btn btn-dark btn-md mt-2" >set</button>
             </div>
           </div>
