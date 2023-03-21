@@ -213,6 +213,7 @@ export default function Home() {
     
   }
 
+  //DON'T BOTHER WITH THIS JUST SOMETHING I TRIED TO CATCH ERRORS
   // const openBets = async (openBetsTime: string) => {
   //   try {
   //     console.log('openBets clicked');
@@ -259,7 +260,7 @@ export default function Home() {
   // };
   
 
-    //call openBet function 
+    //call closeBet function 
     const closeLottery = async () => {
       try {
         const signer = await getProviderOrSigner(true);
@@ -343,7 +344,9 @@ export default function Home() {
           <p>
             Balance(ETH): {utils.formatEther(ethBalance)}ETH <br />
             Balance(Team11) {utils.formatEther(tokenBalance)} T11
+            
           </p>
+          
 
           <div>{renderConnectButton()}</div>
         </div>
