@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import Head from 'next/head'
 import Image from 'next/image'
 import { Inter } from 'next/font/google'
@@ -38,10 +39,12 @@ export default function Home() {
   //get the users token balance
   const [tokenBalance, setTokenBalance] = useState(zero)
   //set Lottery duration
-  const [duration, setDuration] = useState(10)
+  const [duration, setDuration] = useState(0)
+  const [openBetsTime, setOpenBetsTime] = useState("")
   //set the tokens to be burnt
   const [amountToBurn, setAmountToBurn] = useState(zero)
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
+  const [tokenBuy, setTokenBuy] = useState("")
   const web3ModalRef: any = useRef()
 
   
@@ -140,20 +143,16 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
-    if (!walletConnected) {
-      // Assign the Web3Modal class to the reference object by setting its `current` value
-      // The `current` value is persisted throughout as long as this page is open
-      web3ModalRef.current = new Web3Modal({
-        network: 'sepolia',
-        providerOptions: {},
-        disableInjectedProvider: false,
-      })
-      connectWallet()
-      getAmounts()
-    }
-  }, [walletConnected])
+  const checkLotteryState = async() => {
+
+    const signer = await getProviderOrSigner(true);
+    const provider = await getProviderOrSigner(false);
+    const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+    const tx = await lotteryContract.betsOpen();
+    setIsOpened(tx);
+  }
+
+ 
 
   const renderConnectButton = () => {
     // If wallet is not connected, return a button which allows them to connect their wallet
@@ -170,12 +169,8 @@ export default function Home() {
   }
 
   //call openBet function 
-  const openBet = async (duration:string) => {
-    if(!walletConnected){
-      return (<button onClick={connectWallet} className="btn btn-dark btn-lg">
-      Connect your wallet
-    </button>)
-    } else {
+  const openBets = async (duration:string) => {
+    try {
       const signer = await getProviderOrSigner(true);
       const provider = await getProviderOrSigner(false);
       const currentBlock = await provider.getBlock("latest");
@@ -183,20 +178,46 @@ export default function Home() {
       const timeTarget = currentBlock.timestamp + parseFloat(duration);
       const tx = await lotteryContract.openBets(timeTarget);
       const txReceipt = await tx.wait();
-      window.alert(txReceipt.transactionHash);
+      window.alert(`Bets Opened with receipt: ${txReceipt.transactionHash}`);
+      setDuration(Number(openBetsTime));
+      checkLotteryState();
       return txReceipt.transactionHash;
       
+    } catch (error) {
+
+      console.log(`There as an error Openening lottery: `, error)
+      
     }
+    
   }
+
+    //call openBet function 
+    const closeLottery = async () => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const provider = await getProviderOrSigner(false);
+        const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+        const tx = await lotteryContract.closeLottery();
+
+        const receipt = tx.wait();
+        if(receipt){
+          alert(`Lottery Closed`)
+          setIsOpened(false);
+          checkLotteryState(); 
+        }
+              
+      } catch (error) {
+  
+        console.log(`There as an error Closing lottery: `, error)
+        
+      }
+      
+    }
 
   // Logic for buyTokensForLottery()
 
   const buyTokensForLottery = async (amount: string) => {
-    if(!walletConnected){
-      return (<button onClick={connectWallet} className="btn btn-dark btn-lg">
-      Connect your wallet
-    </button>)
-    } else {
+    try {
       const TOKEN_RATIO = 10;
       const signer = await getProviderOrSigner(true);
       const provider = await getProviderOrSigner(false);
@@ -205,11 +226,38 @@ export default function Home() {
       const tx = await lotteryContract.connect(signer).purchaseTokens({
         value: ethers.utils.parseEther(amount).div(TOKEN_RATIO),
       });
+     
       const txReceipt = await tx.wait();
-      window.alert(txReceipt.transactionHash);
+      alert(`Token has been bought, here is the receipt: ${txReceipt.transactionHash} `);
       return txReceipt.transactionHash;
+      getAmounts();
+    } catch (error) {
+      console.log(`Error buying Tokken:`,err )
+      
     }
+    
+     
+    
   }
+
+  useEffect(() => {
+    // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
+    if (!walletConnected) {
+      // Assign the Web3Modal class to the reference object by setting its `current` value
+      // The `current` value is persisted throughout as long as this page is open
+      web3ModalRef.current = new Web3Modal({
+        network: 'sepolia',
+        providerOptions: {},
+        disableInjectedProvider: false,
+      })
+      
+      connectWallet().then(() => {
+        getAmounts();
+        checkLotteryState();
+      });
+     
+    }
+  }, [walletConnected])
 
   return (
     <>
@@ -233,7 +281,7 @@ export default function Home() {
         </div>
         <div className="card text-center">
           <div className="card-header">
-            <h3>Lottery status: closed</h3>
+            <h3>Lottery status: {isOpened ? `opened`: `closed`} </h3>
           </div>
           <div className="card-body">
             <h5 className="card-title">Lottery countDown</h5>
@@ -248,7 +296,7 @@ export default function Home() {
               </CountdownCircleTimer>
             </div>
           </div>
-          <button className="btn btn-dark btn-md mt-2">close lottery</button>
+          <button onClick={() => {closeLottery()}} className="btn btn-dark btn-md ">close lottery</button>
 
           <div className="card-footer text-muted">Duration set: 5</div>
         </div>
@@ -257,8 +305,11 @@ export default function Home() {
             <div className="card-header">Buy Team11 Tokens (T11)</div>
             <div className="card-body">
               <label htmlFor="">Amount: </label>
-              <input className="form-control" type="number" />
-              <button className="btn btn-dark btn-md mt-2">Buy</button>
+              <input onChange={(e) => {
+                const amount = e.target.value
+                setTokenBuy(amount)
+              }} className="form-control" type="number" />
+              <button onClick={() => {buyTokensForLottery(tokenBuy)}} className="btn btn-dark btn-md mt-2">Buy</button>
             </div>
             <div className="card-footer text-muted">pay in ETH</div>
           </div>
@@ -300,11 +351,18 @@ export default function Home() {
             <div className="card-body">
               <label htmlFor="">Duration: </label>
               <input
+              onChange={(e) => {
+                const time = e.target.value;
+                setOpenBetsTime(time)
+              }
+              }
                 placeholder="Time in seconds"
                 className="form-control"
                 type="number"
               />
-              <button className="btn btn-dark btn-md mt-2" >set</button>
+              <button onClick={(e) => {
+                openBets(openBetsTime);
+              }} className="btn btn-dark btn-md mt-2" >set</button>
             </div>
           </div>
 
