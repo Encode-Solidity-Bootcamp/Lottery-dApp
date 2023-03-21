@@ -57,12 +57,22 @@ export default function Home() {
     const provider = await web3ModalRef.current.connect()
     const web3Provider = new providers.Web3Provider(provider)
 
-    const accounts = await ethereum.request({
-      method: 'eth_requestAccounts',
-    })
+    // const accounts = await ethereum.request({
+    //   method: 'eth_requestAccounts',
+    // })
 
+    if (window.ethereum) {
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts',
+      })
     const address = accounts[0]
     setAddress(address)
+    } else {
+      throw new Error('No Ethereum provider found')
+    }
+    
+
+    
 
     // If user is not connected to the sepolia network, let them know and throw an error
     const { chainId } = await web3Provider.getNetwork()
@@ -168,19 +178,31 @@ export default function Home() {
 
   }
 
-  //call openBet function 
-  const openBets = async (duration:string) => {
+  // call openBet function 
+  const openBets = async (openBetsTime:string) => {
     try {
+      console.log('openBets clicked')
+      console.log(`passed duration ${openBetsTime}`)
       const signer = await getProviderOrSigner(true);
+      const xy = await signer.getAddress();
+      console.log(xy)
       const provider = await getProviderOrSigner(false);
-      const currentBlock = await provider.getBlock("latest");
-      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
-      const timeTarget = currentBlock.timestamp + parseFloat(duration);
-      const tx = await lotteryContract.openBets(timeTarget);
+      console.log(provider)
+      const yk = await provider.getBlock('latest');
+      console.log(yk)
+      const blockNumber = await provider.getBlockNumber();
+      console.log(blockNumber)
+      const currentBlock = await provider.getBlock(blockNumber);
+      console.log(currentBlock);
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,provider);
+      const timeTarget = currentBlock.timestamp + parseFloat(openBetsTime);
+      const tx = await lotteryContract.connect(signer).openBets(timeTarget);
       const txReceipt = await tx.wait();
       window.alert(`Bets Opened with receipt: ${txReceipt.transactionHash}`);
+      setOpenBetsTime("");
       setDuration(Number(openBetsTime));
       checkLotteryState();
+      console.log('openBets clicked')
       return txReceipt.transactionHash;
       
     } catch (error) {
@@ -190,6 +212,52 @@ export default function Home() {
     }
     
   }
+
+  // const openBets = async (openBetsTime: string) => {
+  //   try {
+  //     console.log('openBets clicked');
+  //     console.log(`passed duration ${openBetsTime}`);
+      
+  //     const timeTarget = parseFloat(openBetsTime);
+      
+  //     if (isNaN(timeTarget)) {
+  //       throw new Error('Invalid time duration');
+  //     }
+      
+  //     const signer = await getProviderOrSigner(true);
+  //     const address = await signer.getAddress();
+  //     console.log(address);
+      
+  //     const provider = await getProviderOrSigner(false);
+  //     const currentBlock = await provider.getBlockNumber('latest');
+  //     console.log(currentBlock);
+      
+  //     const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT, LOTTERY_ABI, provider);
+  //     const tx = await lotteryContract.connect(signer).openBets(timeTarget);
+  //     const txReceipt = await tx.wait();
+      
+  //     console.log('Bets opened with receipt:', txReceipt.transactionHash);
+      
+  //     if (typeof setOpenBetsTime === 'function') {
+  //       setOpenBetsTime('');
+  //     }
+      
+  //     if (typeof setDuration === 'function') {
+  //       setDuration(Number(openBetsTime));
+  //     }
+      
+  //     if (typeof checkLotteryState === 'function') {
+  //       checkLotteryState();
+  //     }
+      
+  //     return txReceipt.transactionHash;
+      
+  //   } catch (error) {
+  //     console.error('Error opening lottery:', error);
+  //     throw error;
+  //   }
+  // };
+  
 
     //call openBet function 
     const closeLottery = async () => {
@@ -361,7 +429,8 @@ export default function Home() {
                 type="number"
               />
               <button onClick={(e) => {
-                openBets(openBetsTime);
+                openBets(openBetsTime)
+                console.log('button clicked');
               }} className="btn btn-dark btn-md mt-2" >set</button>
             </div>
           </div>
