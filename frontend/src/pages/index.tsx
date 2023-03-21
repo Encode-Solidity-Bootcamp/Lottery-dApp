@@ -43,8 +43,10 @@ export default function Home() {
   const [openBetsTime, setOpenBetsTime] = useState("")
   //set the tokens to be burnt
   const [amountToBurn, setAmountToBurn] = useState(zero)
-  // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const [tokenBuy, setTokenBuy] = useState("")
+  const [ethBuy, setEthBuy] = useState("")
+  const [ticketAmount, setTicketAmount] = useState("")
+  const [displayWinnerPrize, setDisplayWinnerPrize] = useState("Null")
   const web3ModalRef: any = useRef()
 
   
@@ -146,7 +148,6 @@ export default function Home() {
   const checkLotteryState = async() => {
 
     const signer = await getProviderOrSigner(true);
-    const provider = await getProviderOrSigner(false);
     const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
     const tx = await lotteryContract.betsOpen();
     setIsOpened(tx);
@@ -180,7 +181,7 @@ export default function Home() {
       const txReceipt = await tx.wait();
       window.alert(`Bets Opened with receipt: ${txReceipt.transactionHash}`);
       setDuration(Number(openBetsTime));
-      checkLotteryState();
+     
       return txReceipt.transactionHash;
       
     } catch (error) {
@@ -194,17 +195,17 @@ export default function Home() {
     //call openBet function 
     const closeLottery = async () => {
       try {
-        const signer = await getProviderOrSigner(true);
         const provider = await getProviderOrSigner(false);
+        const signer = await getProviderOrSigner(true);
         const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
         const tx = await lotteryContract.closeLottery();
 
         const receipt = tx.wait();
-        if(receipt){
-          alert(`Lottery Closed`)
+       
           setIsOpened(false);
+         
           checkLotteryState(); 
-        }
+        
               
       } catch (error) {
   
@@ -220,19 +221,106 @@ export default function Home() {
     try {
       const TOKEN_RATIO = 10;
       const signer = await getProviderOrSigner(true);
-      const provider = await getProviderOrSigner(false);
-      const address = await signer.getAddress();
+      console.log("here",address)
       const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
-      const tx = await lotteryContract.connect(signer).purchaseTokens({
+      const tx = await lotteryContract.purchaseTokens({
         value: ethers.utils.parseEther(amount).div(TOKEN_RATIO),
       });
      
       const txReceipt = await tx.wait();
       alert(`Token has been bought, here is the receipt: ${txReceipt.transactionHash} `);
-      return txReceipt.transactionHash;
       getAmounts();
     } catch (error) {
-      console.log(`Error buying Tokken:`,err )
+      console.log(`Error buying Tokken:`,error )
+      
+    }
+    
+    
+     
+    
+  }
+  const displayPrize = async () => {
+    try {
+      const signer = await getProviderOrSigner(true);
+      const address = signer.getAddress();
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const tx = await lotteryContract.prize(address);
+      const prize = ethers.utils.formatEther(tx);
+      setDisplayWinnerPrize(prize)
+     
+    } catch (error) {
+      console.log(`Error: `,error )
+      
+    }
+
+    
+     
+    
+  }
+  const claimPrize = async () => {
+    try {
+      const signer = await getProviderOrSigner(true);
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const tx = await lotteryContract.prizeWithdraw(ethers.utils.parseEther(displayWinnerPrize));
+      await tx.wait();
+      const prize = ethers.utils.formatEther(tx);
+      setDisplayWinnerPrize(prize)
+     
+      getAmounts();
+    } catch (error) {
+      console.log(`Error:`,error )
+      
+    }
+    
+    
+     
+    
+  }
+  const burnTokensForETH = async (amount: string) => {
+    try {
+      const signer = await getProviderOrSigner(true);
+      const address = await signer.getAddress();
+      const tokenContract = new ethers.Contract(LOTTERY_TOKEN_CONTRACT,TOKEN_ABI,signer);
+      //Approve use of token
+      const txAllow = await tokenContract.approve(LOTTERY_CONTRACT, ethers.constants.MaxUint256);
+      const receiptAllow = await txAllow.wait();
+      alert('Approved')
+      console.log(`Allowance confirmed (${receiptAllow.transactionHash})\n`);
+
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const tx = await lotteryContract.returnTokens(
+        ethers.utils.parseEther(amount),
+      );
+     
+      const txReceipt = await tx.wait();
+      alert(`Token has been burnt for ETH, here is the receipt: ${txReceipt.transactionHash} `);
+      getAmounts();
+    } catch (error) {
+      console.log(`Error buying Tokken:`,error)
+      
+    }
+    
+     
+    
+  }
+  const placeBets = async (amount: string) => {
+    try {
+      const signer = await getProviderOrSigner(true);
+      const tokenContract = new ethers.Contract(LOTTERY_TOKEN_CONTRACT,TOKEN_ABI,signer);
+      //Approve use of token
+      // const txAllow = await tokenContract.approve(LOTTERY_CONTRACT, ethers.constants.MaxUint256);
+      // const receiptAllow = await txAllow.wait();
+      // alert('Approved')
+      // console.log(`Allowance confirmed (${receiptAllow.transactionHash})\n`);
+
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const tx = await lotteryContract.betMany(amount);
+     
+      const txReceipt = await tx.wait();
+      alert(`Goodluck Bets has been Placed: ${txReceipt.transactionHash} `);
+      getAmounts();
+    } catch (error) {
+      console.log(`Error buying Tokken:`,error)
       
     }
     
@@ -254,6 +342,7 @@ export default function Home() {
       connectWallet().then(() => {
         getAmounts();
         checkLotteryState();
+        displayPrize();
       });
      
     }
@@ -267,6 +356,7 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+      <main className='bg-dark'>
       <h1 className="text-center py-3 mx-5 pt-5"> ENCODE BOOTCAMP LOTTERY</h1>
       <br />
       <h6 className="text-center py-3 mx-5 pt-5"> Every one is a winner</h6>
@@ -321,11 +411,15 @@ export default function Home() {
                 Tickets(more tickets=better <br /> chance to win):{' '}
               </label>
               <input
+              onChange={(e) =>{
+                const amount = e.target.value;
+                setTicketAmount(amount)
+              }}
                 placeholder="enter amount of tickets"
                 className="form-control"
                 type="number"
               />
-              <button className="btn btn-dark btn-md mt-2">Bet</button>
+              <button onClick={() => {placeBets(ticketAmount)}} className="btn btn-dark btn-md mt-2">Bet</button>
             </div>
             <div className="card-footer text-muted">pay in T11</div>
           </div>
@@ -335,11 +429,15 @@ export default function Home() {
             <div className="card-body">
               <label htmlFor="">Amount: </label>
               <input
+              onChange={(e) => {
+                const amount  = e.target.value;
+                setEthBuy(amount)
+              }}
                 placeholder="swap back ETH"
                 className="form-control"
                 type="number"
               />
-              <button className="btn btn-dark btn-md mt-2">Buy</button>
+              <button onClick={() => {burnTokensForETH(ethBuy)}} className="btn btn-dark btn-md mt-2">Buy</button>
             </div>
             <div className="card-footer text-muted">pay in T11</div>
           </div>
@@ -370,8 +468,8 @@ export default function Home() {
             <div className="card-header">Prize Board</div>
             <div className="card-body">
               <h5 className="card-title">Did you win the lottery? </h5>
-              <p className="card-text">Prize won: </p>
-              <button className="btn btn-dark">Withdraw Winnings</button>
+              <p className="card-text">Prize won: {displayWinnerPrize} </p>
+              <button onClick={()=> {claimPrize}} className="btn btn-dark">Claim Prize</button>
           </div> 
            </div>
           <Confetti width={width} height={height} />
@@ -379,6 +477,7 @@ export default function Home() {
           
           </div>
         
+      </main>
       </main>
     </>
   )
