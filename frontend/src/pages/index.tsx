@@ -196,11 +196,14 @@ export default function Home() {
     const closeLottery = async () => {
       try {
         const provider = await getProviderOrSigner(false);
+      
+        closingTime();
+      
         const signer = await getProviderOrSigner(true);
         const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
         const tx = await lotteryContract.closeLottery();
 
-        const receipt = tx.wait();
+        const receipt = await tx.wait();
        
           setIsOpened(false);
          
@@ -214,7 +217,30 @@ export default function Home() {
       }
       
     }
+   //call openBet function 
+   const closingTime = async () => {
+    try {
+      const provider = await getProviderOrSigner(false);
+    
+     
+    
+      const signer = await getProviderOrSigner(true);
+      const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT,LOTTERY_ABI,signer);
+      const tx = await lotteryContract.betsClosingTime();
+      const closingTimeDate = new Date(tx.toNumber() * 1000);
 
+     
+     console.log(`closing Time: ${closingTimeDate.toLocaleDateString()}`)
+        checkLotteryState(); 
+      
+            
+    } catch (error) {
+
+      console.log(`There as an error Closing lottery: `, error)
+      
+    }
+    
+  }
   // Logic for buyTokensForLottery()
 
   const buyTokensForLottery = async (amount: string) => {
@@ -357,9 +383,9 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className='bg-dark'>
-      <h1 className="text-center py-3 mx-5 pt-5"> ENCODE BOOTCAMP LOTTERY</h1>
+      <h1 className="text-center text-primary py-3 mx-5 pt-5"> ENCODE BOOTCAMP LOTTERY</h1>
       <br />
-      <h6 className="text-center py-3 mx-5 pt-5"> Every one is a winner</h6>
+      <h6 className="text-center  text-primary py-3 mx-5 pt-5"> Every one is a winner</h6>
       <main className={styles.main}>
         <div className={styles.description}>
           <p>
