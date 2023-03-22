@@ -202,55 +202,7 @@ export default function Home() {
     
   }
 
-  //DON'T BOTHER WITH THIS JUST SOMETHING I TRIED TO CATCH ERRORS
-  // const openBets = async (openBetsTime: string) => {
-  //   try {
-  //     console.log('openBets clicked');
-  //     console.log(`passed duration ${openBetsTime}`);
-      
-  //     const timeTarget = parseFloat(openBetsTime);
-      
-  //     if (isNaN(timeTarget)) {
-  //       throw new Error('Invalid time duration');
-  //     }
-      
-  //     const signer = await getProviderOrSigner(true);
-  //     const address = await signer.getAddress();
-  //     console.log(address);
-      
-  //     const provider = await getProviderOrSigner(false);
-  //     const currentBlock = await provider.getBlockNumber('latest');
-  //     console.log(currentBlock);
-      
-  //     const lotteryContract = new ethers.Contract(LOTTERY_CONTRACT, LOTTERY_ABI, provider);
-  //     const tx = await lotteryContract.connect(signer).openBets(timeTarget);
-  //     const txReceipt = await tx.wait();
-      
-  //     console.log('Bets opened with receipt:', txReceipt.transactionHash);
-      
-  //     if (typeof setOpenBetsTime === 'function') {
-  //       setOpenBetsTime('');
-  //     }
-      
-  //     if (typeof setDuration === 'function') {
-  //       setDuration(Number(openBetsTime));
-  //     }
-      
-  //     if (typeof checkLotteryState === 'function') {
-  //       checkLotteryState();
-  //     }
-      
-  //     return txReceipt.transactionHash;
-      
-  //   } catch (error) {
-  //     console.error('Error opening lottery:', error);
-  //     throw error;
-  //   }
-  // };
-  
-
-    //call closeBet function 
-    const closeLottery = async () => {
+   const closeLottery = async () => {
       try {
         const provider = await getProviderOrSigner(false);
       
